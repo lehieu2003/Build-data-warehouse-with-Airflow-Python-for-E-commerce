@@ -209,7 +209,55 @@ Sau khi CI chay on, ban co the nang cap tiep:
 - them workflow deploy len VPS qua SSH
 - tach `dev` va `prod` config rieng
 
-## 11. Ket luan ngan
+## 11. Viec ban nen lam tren GitHub ngay bay gio
+
+Co mot vai viec quan trong khong the commit bang code ma ban phai bam tren giao dien GitHub.
+
+### Bat branch protection cho `main`
+
+Vao:
+
+`Settings` -> `Branches` -> `Add branch protection rule`
+
+Dung cac tuy chon co ban nay:
+
+- Branch name pattern: `main`
+- check `Require a pull request before merging`
+- check `Require status checks to pass before merging`
+- chon check `validate-airflow-project`
+
+Y nghia:
+
+- khong merge thang vao `main`
+- moi thay doi di qua pull request
+- CI phai xanh moi merge duoc
+
+### Cach lam viec an toan hon
+
+Thay vi sua tren `main`, dung quy trinh:
+
+```powershell
+git checkout -b feature/update-sql
+git add .
+git commit -m "Update mart query"
+git push -u origin feature/update-sql
+```
+
+Sau do:
+
+1. len GitHub
+2. tao Pull Request vao `main`
+3. doi CI chay xong
+4. merge neu pass
+
+### Badge CI trong README
+
+Repo da duoc them badge CI o dau file `README.md`.
+
+Khi workflow pass, badge se hien trang thai xanh.
+Khi workflow fail, badge se hien trang thai do.
+
+## 12. Ket luan ngan
 
 Co, project nay setup CI/CD duoc.
 

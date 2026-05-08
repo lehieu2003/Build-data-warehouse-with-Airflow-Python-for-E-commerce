@@ -1,5 +1,7 @@
 # Build-data-warehouse-with-Airflow-Python-for-E-commerce
 
+![Airflow CI](https://github.com/lehieu2003/Build-data-warehouse-with-Airflow-Python-for-E-commerce/actions/workflows/ci.yml/badge.svg)
+
 Tai lieu setup va giai thich chi tiet cho nguoi moi hoc Data Engineering nam o:
 
 - [Huong dan setup, chay va hieu data pipeline](docs/SETUP_AND_PIPELINE.md)

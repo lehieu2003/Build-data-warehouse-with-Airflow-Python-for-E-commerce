@@ -39,6 +39,9 @@ jobs:
       - name: Validate Docker Compose file
         run: docker compose config --quiet
 
+      - name: Validate Python syntax
+        run: python -m compileall embedded_dags plugins
+
       - name: Prepare mounted directories for Airflow
         run: |
           mkdir -p logs config plugins
@@ -55,3 +58,6 @@ jobs:
 
       - name: Verify DAG can be parsed
         run: docker compose run --rm airflow-cli dags list
+
+      - name: Verify there are no DAG import errors
+        run: docker compose run --rm airflow-cli dags list-import-errors
