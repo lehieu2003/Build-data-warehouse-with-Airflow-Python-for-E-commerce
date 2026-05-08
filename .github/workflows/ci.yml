@@ -39,6 +39,11 @@ jobs:
       - name: Validate Docker Compose file
         run: docker compose config --quiet
 
+      - name: Prepare mounted directories for Airflow
+        run: |
+          mkdir -p logs config plugins
+          chmod -R 777 logs config plugins
+
       - name: Build Airflow image
         run: docker compose build
 
