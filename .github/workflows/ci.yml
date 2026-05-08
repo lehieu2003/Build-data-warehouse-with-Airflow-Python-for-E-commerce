@@ -1,0 +1,31 @@
+name: Airflow CI
+
+on:
+  push:
+    branches:
+      - main
+      - master
+  pull_request:
+
+jobs:
+  validate-airflow-project:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Validate Docker Compose file
+        run: docker compose config --quiet
+
+      - name: Build Airflow image
+        run: docker compose build
+
+      - name: Start Airflow metadata database
+        run: docker compose up -d postgres
+
+      - name: Initialize Airflow metadata
+        run: docker compose up airflow-init --abort-on-container-exit --exit-code-from airflow-init
+
+      - name: Verify DAG can be parsed
+        run: docker compose run --rm airflow-cli dags list

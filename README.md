@@ -5,6 +5,7 @@ Tai lieu setup va giai thich chi tiet cho nguoi moi hoc Data Engineering nam o:
 - [Huong dan setup, chay va hieu data pipeline](docs/SETUP_AND_PIPELINE.md)
 - [Troubleshooting debug Docker/Airflow CLI](docs/DEBUG_DOCKER_CLI_TROUBLESHOOTING.md)
 - [Data Engineer Workflow](docs/DATA_ENGINEER_WORKFLOW.md)
+- [Huong dan setup CI/CD co ban cho project nay](docs/CICD_SETUP.md)
 
 🚀 Just completed an exciting ELT data pipeline project focused on eCommerce data! This end-to-end pipeline extracts sales data, stages it for further analysis, and transforms it into actionable insights in a data warehouse.
 
