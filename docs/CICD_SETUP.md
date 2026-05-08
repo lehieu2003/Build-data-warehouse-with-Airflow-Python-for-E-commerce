@@ -266,3 +266,5 @@ Nhung voi repo nay va voi nguoi moi, cach dung nhat la:
 1. bat dau bang `CI`
 2. chi kiem tra build + Airflow DAG parse
 3. sau do moi them `CD` khi da co server deploy ro rang
+
+Test chut di
