@@ -11,7 +11,8 @@ Project mo phong mot data pipeline cho bai toan e-commerce:
 3. Airflow doc du lieu tu MySQL.
 4. Airflow load du lieu tho sang PostgreSQL schema `staging`.
 5. Airflow transform du lieu staging thanh cac bang dimension va fact trong PostgreSQL schema `warehouse`.
-6. Power BI doc warehouse de ve dashboard doanh thu, don hang, san pham, khu vuc.
+6. Airflow publish data marts trong schema `mart` de BI su dung truc tiep.
+7. Power BI doc mart/warehouse de ve dashboard doanh thu, don hang, san pham, khu vuc.
 
 Theo ngon ngu Data Engineering, day la pipeline dang ELT:
 
@@ -27,7 +28,7 @@ Project chay bang Docker Compose va gom cac service quan trong:
 - Airflow scheduler: thanh phan lap lich va dieu phoi task.
 - Airflow metadata PostgreSQL: database rieng cua Airflow, chi luu metadata cua Airflow.
 - MySQL: source database, luu cac bang raw cua Olist sau khi nap CSV.
-- PostgreSQL warehouse: database dich, gom schema `staging` va `warehouse`.
+- PostgreSQL warehouse: database dich, gom schema `staging`, `warehouse`, `mart`.
 - Power BI file: dashboard mau doc tu warehouse.
 
 Can phan biet hai PostgreSQL trong project:
@@ -134,15 +135,16 @@ Neu count tra ve so lon hon 0, MySQL source da san sang.
 
 ## 7. Tao schema staging va warehouse trong PostgreSQL
 
-Pipeline ghi vao hai schema:
+Pipeline ghi vao ba schema:
 
 - `staging`: luu ban copy du lieu tho tu MySQL, ten bang co tien to `stg_`.
 - `warehouse`: luu bang da transform, gom dimension va fact.
+- `mart`: luu bang tong hop phuc vu BI/dashboard.
 
 Tao schema:
 
 ```powershell
-docker exec -it de_psql psql -U admin -d postgres -c "CREATE SCHEMA IF NOT EXISTS staging; CREATE SCHEMA IF NOT EXISTS warehouse;"
+docker exec -it de_psql psql -U admin -d postgres -c "CREATE SCHEMA IF NOT EXISTS staging; CREATE SCHEMA IF NOT EXISTS warehouse; CREATE SCHEMA IF NOT EXISTS mart;"
 ```
 
 Kiem tra schema:
@@ -212,10 +214,10 @@ docker compose run --rm airflow-cli dags list
 
 ## 10. Workflow cua DAG
 
-DAG chinh co 3 nhom task:
+DAG chinh co 4 nhom task:
 
 ```text
-extract -> transform -> load
+extract -> transform -> load -> publish_marts
 ```
 
 ### Extract group
@@ -288,6 +290,16 @@ Sau do tinh cac metric:
 
 Bang fact chua cac khoa lien ket toi dimension va cac chi so phan tich doanh thu/don hang.
 
+### Publish marts group
+
+Nhom `publish_marts` tao 3 bang tong hop trong schema `mart`:
+
+- `mart.mart_sales_daily`: doanh thu theo ngay, so don, AOV.
+- `mart.mart_product_performance`: doanh thu va so luong theo san pham + category.
+- `mart.mart_city_revenue`: doanh thu va so don theo city/state.
+
+Tat ca mart dang theo che do full refresh: moi lan DAG chay se truncate va insert lai toan bo du lieu.
+
 ## 11. Mo hinh data warehouse
 
 Warehouse trong project theo huong star schema don gian:
@@ -331,13 +343,20 @@ Kiem tra so dong bang fact:
 docker exec -it de_psql psql -U admin -d postgres -c "SELECT COUNT(*) FROM warehouse.fact_orders;"
 ```
 
+Kiem tra cac bang mart:
+
+```powershell
+docker exec -it de_psql psql -U admin -d postgres -c "\dt mart.*"
+docker exec -it de_psql psql -U admin -d postgres -c "SELECT COUNT(*) FROM mart.mart_sales_daily; SELECT COUNT(*) FROM mart.mart_product_performance; SELECT COUNT(*) FROM mart.mart_city_revenue;"
+```
+
 Chay thu query doanh thu theo thang:
 
 ```powershell
 docker exec -it de_psql psql -U admin -d postgres -c "SELECT d.month, SUM(f.total_amount) AS total_revenue FROM warehouse.fact_orders f JOIN warehouse.dim_dates d ON f.order_date_key = d.date_key GROUP BY d.month ORDER BY d.month;"
 ```
 
-Luu y: trong SQL tu Power BI hoac psql, nen them prefix schema `warehouse.` truoc ten bang neu search path chua duoc cau hinh.
+Luu y: trong SQL tu Power BI hoac psql, nen them prefix schema `warehouse.` hoac `mart.` truoc ten bang neu search path chua duoc cau hinh.
 
 ## 13. Ket noi Power BI
 
@@ -349,7 +368,7 @@ File dashboard Power BI trong project dung du lieu tu warehouse. De ket noi lai 
 4. Server: `localhost:5433`.
 5. Database: `postgres`.
 6. Username/password: `admin/admin`.
-7. Chon cac bang trong schema `warehouse`.
+7. Chon cac bang trong schema `mart` (uu tien) hoac `warehouse` neu can chi tiet.
 8. Refresh dashboard.
 
 Port `5433` la port tren may host. Ben trong Docker network, Airflow dung host `de_psql` va port `5432`.
@@ -421,7 +440,7 @@ docker compose ps de_psql
 Chay lai lenh tao schema:
 
 ```powershell
-docker exec -it de_psql psql -U admin -d postgres -c "CREATE SCHEMA IF NOT EXISTS staging; CREATE SCHEMA IF NOT EXISTS warehouse;"
+docker exec -it de_psql psql -U admin -d postgres -c "CREATE SCHEMA IF NOT EXISTS staging; CREATE SCHEMA IF NOT EXISTS warehouse; CREATE SCHEMA IF NOT EXISTS mart;"
 ```
 
 ### Loi MySQL khong nap duoc CSV
@@ -486,7 +505,7 @@ Can than voi `down -v`: lenh nay xoa du lieu MySQL, PostgreSQL warehouse va Airf
 Project phu hop de hoc luong end-to-end, nhung chua phai production pipeline:
 
 - Moi lan chay dang replace bang, chua co incremental load.
-- Chua co data quality checks.
+- Chua co data quality checks tu dong.
 - Chua co retry cho pipeline chinh.
 - Chua co test tu dong cho transform logic.
 - Surrogate key trong mot so dimension/fact van con don gian, chua dam bao quan he khoa ngoai chuan nhu production warehouse.

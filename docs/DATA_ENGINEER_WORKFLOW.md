@@ -12,7 +12,7 @@ Dau vao:
 
 Dau ra:
 
-- Data warehouse trong PostgreSQL (`staging`, `warehouse`).
+- Data warehouse trong PostgreSQL (`staging`, `warehouse`, `mart`).
 - Dashboard phan tich tren Power BI.
 
 Cau hoi business tieu bieu:
@@ -57,12 +57,13 @@ DAG chinh: `e_commerce_dw_etl`
 Task flow:
 
 ```text
-extract -> transform -> load
+extract -> transform -> load -> publish_marts
 ```
 
 - `extract`: doc MySQL va ghi sang `staging.stg_*`.
 - `transform`: tao dimension (`dim_*`) trong schema `warehouse`.
 - `load`: tao fact table `warehouse.fact_orders`.
+- `publish_marts`: tao bang tong hop trong schema `mart` de BI dung truc tiep.
 
 Vai tro Data Engineer:
 
@@ -76,6 +77,7 @@ Mo hinh muc tieu:
 - Star schema don gian.
 - `fact_orders` o trung tam.
 - Cac dimension: `dim_customers`, `dim_products`, `dim_sellers`, `dim_dates`, `dim_payments`, `dim_geolocation`.
+- Data marts phuc vu BI: `mart_sales_daily`, `mart_product_performance`, `mart_city_revenue`.
 
 Vai tro Data Engineer:
 
@@ -89,14 +91,16 @@ Sau moi lan DAG chay, Data Engineer can validate:
 
 1. Co du bang trong `staging`.
 2. Co du bang trong `warehouse`.
-3. Fact co du lieu (`COUNT(*) > 0`).
-4. Query business tra ket qua hop ly.
+3. Co du bang trong `mart`.
+4. Fact va mart co du lieu (`COUNT(*) > 0`).
+5. Query business tra ket qua hop ly.
 
 Lenh quick check:
 
 ```powershell
 docker exec de_psql psql -U admin -d postgres -c "\dt staging.*"
 docker exec de_psql psql -U admin -d postgres -c "\dt warehouse.*"
+docker exec de_psql psql -U admin -d postgres -c "\dt mart.*"
 docker exec de_psql psql -U admin -d postgres -c "SELECT COUNT(*) FROM warehouse.fact_orders;"
 ```
 
@@ -105,7 +109,7 @@ docker exec de_psql psql -U admin -d postgres -c "SELECT COUNT(*) FROM warehouse
 Kenh tieu thu:
 
 - Power BI ket noi PostgreSQL (`localhost:5433`).
-- Chon bang trong schema `warehouse`.
+- Uu tien chon bang trong schema `mart`.
 - Tao model relationship va refresh dashboard.
 
 Vai tro Data Engineer:

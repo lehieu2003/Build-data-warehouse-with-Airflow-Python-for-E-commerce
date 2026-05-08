@@ -133,6 +133,105 @@ def transform_fact_orders():
     fact_columns = ["order_id", "customer_key", "product_key", "seller_key", "geolocation_key", "payment_key", "order_date_key", "order_status", "price", "freight_value", "total_amount", "payment_value", "delivery_time", "estimated_delivery_time"]
     warehouse_operator.save_data_to_postgres(df[fact_columns], "fact_orders", schema="warehouse", if_exists="replace")
 
+def publish_mart_sales_daily():
+    warehouse_operator = PostgresOperators("postgres")
+    warehouse_operator.execute_query(
+        """
+        CREATE TABLE IF NOT EXISTS mart.mart_sales_daily (
+            order_date DATE PRIMARY KEY,
+            order_count BIGINT,
+            total_revenue NUMERIC(18, 2),
+            average_order_value NUMERIC(18, 2)
+        );
+        """
+    )
+    warehouse_operator.execute_query("TRUNCATE TABLE mart.mart_sales_daily;")
+    warehouse_operator.execute_query(
+        """
+        INSERT INTO mart.mart_sales_daily (order_date, order_count, total_revenue, average_order_value)
+        SELECT
+            f.order_date_key AS order_date,
+            COUNT(DISTINCT f.order_id) AS order_count,
+            ROUND(SUM(f.total_amount)::numeric, 2) AS total_revenue,
+            ROUND((SUM(f.total_amount) / NULLIF(COUNT(DISTINCT f.order_id), 0))::numeric, 2) AS average_order_value
+        FROM warehouse.fact_orders f
+        GROUP BY f.order_date_key
+        ORDER BY f.order_date_key;
+        """
+    )
+
+def publish_mart_product_performance():
+    warehouse_operator = PostgresOperators("postgres")
+    warehouse_operator.execute_query(
+        """
+        CREATE TABLE IF NOT EXISTS mart.mart_product_performance (
+            product_id VARCHAR(64) PRIMARY KEY,
+            product_category_name VARCHAR(64),
+            product_category_name_english VARCHAR(64),
+            order_count BIGINT,
+            total_quantity BIGINT,
+            total_revenue NUMERIC(18, 2),
+            avg_item_price NUMERIC(18, 2)
+        );
+        """
+    )
+    warehouse_operator.execute_query("TRUNCATE TABLE mart.mart_product_performance;")
+    warehouse_operator.execute_query(
+        """
+        INSERT INTO mart.mart_product_performance (
+            product_id,
+            product_category_name,
+            product_category_name_english,
+            order_count,
+            total_quantity,
+            total_revenue,
+            avg_item_price
+        )
+        SELECT
+            f.product_key AS product_id,
+            p.product_category_name,
+            p.product_category_name_english,
+            COUNT(DISTINCT f.order_id) AS order_count,
+            COUNT(*) AS total_quantity,
+            ROUND(SUM(f.total_amount)::numeric, 2) AS total_revenue,
+            ROUND(AVG(f.price)::numeric, 2) AS avg_item_price
+        FROM warehouse.fact_orders f
+        JOIN warehouse.dim_products p ON f.product_key = p.product_id
+        GROUP BY f.product_key, p.product_category_name, p.product_category_name_english
+        ORDER BY total_revenue DESC;
+        """
+    )
+
+def publish_mart_city_revenue():
+    warehouse_operator = PostgresOperators("postgres")
+    warehouse_operator.execute_query(
+        """
+        CREATE TABLE IF NOT EXISTS mart.mart_city_revenue (
+            geolocation_city VARCHAR(64),
+            geolocation_state VARCHAR(64),
+            order_count BIGINT,
+            total_revenue NUMERIC(18, 2),
+            PRIMARY KEY (geolocation_city, geolocation_state)
+        );
+        """
+    )
+    warehouse_operator.execute_query("TRUNCATE TABLE mart.mart_city_revenue;")
+    warehouse_operator.execute_query(
+        """
+        INSERT INTO mart.mart_city_revenue (geolocation_city, geolocation_state, order_count, total_revenue)
+        SELECT
+            g.geolocation_city,
+            g.geolocation_state,
+            COUNT(DISTINCT f.order_id) AS order_count,
+            ROUND(SUM(f.total_amount)::numeric, 2) AS total_revenue
+        FROM warehouse.fact_orders f
+        JOIN warehouse.dim_geolocation g
+            ON f.geolocation_key::text = g.geolocation_zip_code_prefix::text
+        GROUP BY g.geolocation_city, g.geolocation_state
+        ORDER BY total_revenue DESC;
+        """
+    )
+
 
 default_args = {
     "owner": "airflow",
@@ -165,4 +264,30 @@ with DAG(
     with TaskGroup("load") as load_group:
         task_fact_orders = PythonOperator(task_id="transform_fact_orders", python_callable=transform_fact_orders)
 
+    with TaskGroup("publish_marts") as publish_marts_group:
+        task_create_mart_schema = PythonOperator(
+            task_id="create_mart_schema",
+            python_callable=lambda: PostgresOperators("postgres").execute_query(
+                "CREATE SCHEMA IF NOT EXISTS mart;"
+            ),
+        )
+        task_mart_sales_daily = PythonOperator(
+            task_id="publish_mart_sales_daily",
+            python_callable=publish_mart_sales_daily,
+        )
+        task_mart_product_performance = PythonOperator(
+            task_id="publish_mart_product_performance",
+            python_callable=publish_mart_product_performance,
+        )
+        task_mart_city_revenue = PythonOperator(
+            task_id="publish_mart_city_revenue",
+            python_callable=publish_mart_city_revenue,
+        )
+        task_create_mart_schema >> [
+            task_mart_sales_daily,
+            task_mart_product_performance,
+            task_mart_city_revenue,
+        ]
+
+    load_group >> publish_marts_group
     extract_group >> transform_group >> load_group
