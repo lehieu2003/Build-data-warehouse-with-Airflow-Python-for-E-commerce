@@ -3,6 +3,7 @@ from airflow.operators.python import PythonOperator
 from airflow.utils.task_group import TaskGroup
 from datetime import datetime, timedelta
 import pandas as pd
+import os
 
 from mysql_operator import MySQLOperators
 from postgresql_operator import PostgresOperators
@@ -243,11 +244,13 @@ default_args = {
     "retry_delay": timedelta(minutes=5),
 }
 
+schedule_interval = None if os.getenv("AIRFLOW__CORE__UNIT_TEST_MODE") == "True" else timedelta(days=1)
+
 with DAG(
     "e_commerce_dw_etl",
     default_args=default_args,
     description="ETL process for E-commerce Data Warehouse",
-    schedule_interval=timedelta(days=1),
+    schedule_interval=schedule_interval,
     catchup=False,
 ) as dag:
     with TaskGroup("extract") as extract_group:
