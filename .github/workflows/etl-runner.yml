@@ -46,16 +46,29 @@ jobs:
       - name: Start services
         run: docker compose up -d
 
-      - name: Wait for Airflow webserver
+      - name: Wait for Airflow webserver and scheduler
         run: |
           for i in {1..30}; do
             if curl -fsS http://localhost:8080/health > /tmp/airflow-health.json; then
               cat /tmp/airflow-health.json
-              exit 0
+              python - <<'PY'
+import json
+with open("/tmp/airflow-health.json", "r", encoding="utf-8") as f:
+    data = json.load(f)
+web_ok = data.get("metadatabase", {}).get("status") == "healthy"
+scheduler_ok = data.get("scheduler", {}).get("status") == "healthy"
+if web_ok and scheduler_ok:
+    raise SystemExit(0)
+raise SystemExit(1)
+PY
+              if [ $? -eq 0 ]; then
+                exit 0
+              fi
             fi
             sleep 10
           done
           docker compose logs airflow-webserver
+          docker compose logs airflow-scheduler
           exit 1
 
       - name: Prepare source and warehouse databases
@@ -71,6 +84,9 @@ jobs:
           docker compose run --rm airflow-cli connections delete postgres || true
           docker compose run --rm airflow-cli connections add mysql --conn-type mysql --conn-host mysql --conn-login admin --conn-password admin --conn-schema olist --conn-port 3306
           docker compose run --rm airflow-cli connections add postgres --conn-type postgres --conn-host de_psql --conn-login admin --conn-password admin --conn-schema postgres --conn-port 5432
+
+      - name: Unpause DAG
+        run: docker compose run --rm airflow-cli dags unpause e_commerce_dw_etl
 
       - name: Trigger DAG run
         run: |
