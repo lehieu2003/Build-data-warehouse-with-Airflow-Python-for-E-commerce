@@ -13,6 +13,10 @@ services:
         value: 0.0.0.0
       - key: AIRFLOW__WEBSERVER__WEB_SERVER_PORT
         value: "10000"
+      - key: AIRFLOW__WEBSERVER__WORKERS
+        value: "1"
+      - key: AIRFLOW__WEBSERVER__WEB_SERVER_WORKER_TIMEOUT
+        value: "300"
       - key: AIRFLOW__CORE__LOAD_EXAMPLES
         value: "False"
       - key: AIRFLOW__CORE__EXECUTOR
