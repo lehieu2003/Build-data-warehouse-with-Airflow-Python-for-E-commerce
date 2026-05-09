@@ -1,5 +1,12 @@
 FROM apache/airflow:2.9.2-python3.10
 
+ENV AIRFLOW_HOME=/opt/airflow/render-home
+ENV AIRFLOW__CORE__DAGS_FOLDER=/opt/airflow/dags
+ENV AIRFLOW__CORE__PLUGINS_FOLDER=/opt/airflow/plugins
+ENV AIRFLOW__CORE__LOAD_EXAMPLES=False
+ENV AIRFLOW__CORE__EXECUTOR=SequentialExecutor
+ENV AIRFLOW__DATABASE__SQL_ALCHEMY_CONN=sqlite:////opt/airflow/render-home/airflow.db
+
 COPY requirements.txt /requirements.txt
 
 USER airflow
@@ -17,10 +24,8 @@ RUN chmod +x /opt/airflow/scripts/render-start.sh \
     && mkdir -p /opt/airflow/render-home \
     && chown -R airflow:0 /opt/airflow/dags /opt/airflow/plugins /opt/airflow/scripts /opt/airflow/render-home
 
-ENV AIRFLOW_HOME=/opt/airflow/render-home
-ENV AIRFLOW__CORE__DAGS_FOLDER=/opt/airflow/dags
-ENV AIRFLOW__CORE__PLUGINS_FOLDER=/opt/airflow/plugins
-
 USER airflow
+
+RUN airflow db init
 
 CMD ["/opt/airflow/scripts/render-start.sh"]
