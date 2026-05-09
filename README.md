@@ -11,6 +11,7 @@ Tai lieu setup va giai thich chi tiet cho nguoi moi hoc Data Engineering nam o:
 - [Huong dan CD demo len Render free](docs/CD_RENDER_FREE.md)
 - [Case study debug CD Render tu log](docs/CD_DEBUG_CASE_STUDY.md)
 - [Lua chon tiep theo sau khi Render free khong du RAM](docs/CD_OPTIONS_AFTER_RENDER.md)
+- [Chay ETL mien phi bang GitHub Actions](docs/GITHUB_ACTIONS_ETL_FREE.md)
 
 🚀 Just completed an exciting ELT data pipeline project focused on eCommerce data! This end-to-end pipeline extracts sales data, stages it for further analysis, and transforms it into actionable insights in a data warehouse.
 
