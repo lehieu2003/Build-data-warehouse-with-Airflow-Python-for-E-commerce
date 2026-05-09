@@ -1,5 +1,7 @@
 FROM apache/airflow:2.9.2-python3.10
 
+USER root
+
 COPY requirements.txt /requirements.txt
 
 RUN pip install --upgrade pip \
@@ -16,5 +18,7 @@ RUN chmod +x /opt/airflow/scripts/render-start.sh \
 ENV AIRFLOW_HOME=/opt/airflow/render-home
 ENV AIRFLOW__CORE__DAGS_FOLDER=/opt/airflow/dags
 ENV AIRFLOW__CORE__PLUGINS_FOLDER=/opt/airflow/plugins
+
+USER airflow
 
 CMD ["/opt/airflow/scripts/render-start.sh"]
