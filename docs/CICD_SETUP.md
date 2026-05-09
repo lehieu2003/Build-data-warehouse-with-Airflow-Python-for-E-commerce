@@ -208,6 +208,7 @@ Sau khi CI chay on, ban co the nang cap tiep:
 - them end-to-end test bang sample dataset nho
 - them workflow deploy len VPS qua SSH
 - tach `dev` va `prod` config rieng
+- hoc them cach doc log va debug CD qua case study Render
 
 ## 11. Viec ban nen lam tren GitHub ngay bay gio
 

@@ -2,6 +2,12 @@
 
 Tai lieu nay huong dan cach deploy tu dong repo Airflow nay len Render free chi de hoc `CD`.
 
+Ket luan sau qua trinh test:
+
+- workflow CD hoat dong
+- Render nhan deploy
+- nhung Airflow khong chay on tren free tier vi gioi han RAM
+
 ## 1. Ban can hieu gioi han truoc
 
 Ban dang deploy theo kieu demo, khong phai production.
@@ -169,3 +175,21 @@ CD nay la de hoc quy trinh:
 - release moi
 
 No khong phai cach nen dung de van hanh Airflow production lau dai tren free tier.
+
+## 12. Ket qua cuoi cung cua case nay
+
+Sau khi debug den cuoi, root cause la:
+
+- `Out of memory (used over 512Mi)`
+
+Noi cach khac:
+
+- GitHub Actions ok
+- Render hook ok
+- Docker build ok
+- runtime Airflow qua nang cho free tier
+
+Neu ban muon hoc cach debug tung buoc, doc them:
+
+- [Case study debug CD Render](docs/CD_DEBUG_CASE_STUDY.md)
+- [Lua chon sau khi Render free khong du RAM](docs/CD_OPTIONS_AFTER_RENDER.md)
