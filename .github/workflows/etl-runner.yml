@@ -117,6 +117,10 @@ jobs:
           curl -fsS -u airflow:airflow "http://localhost:8080/api/v1/dags/e_commerce_dw_etl/dagRuns/${DAG_RUN_ID}/taskInstances" > /tmp/task_instances.json || true
           cat /tmp/task_instances.json || true
           python -c "import json, pathlib; path = pathlib.Path('/tmp/task_instances.json'); data = json.loads(path.read_text(encoding='utf-8')) if path.exists() else {}; [print(f\"{item.get('task_id')} -> {item.get('state')}\") for item in data.get('task_instances', [])]"
+          echo "===== Airflow task log files ====="
+          find logs -type f | sort || true
+          echo "===== Failed publish_marts task logs ====="
+          find logs -type f \( -path "*publish_mart_sales_daily*" -o -path "*publish_mart_product_performance*" -o -path "*publish_mart_city_revenue*" \) -print -exec sh -c 'echo "--- $1 ---"; cat "$1"' _ {} \; || true
           docker compose logs airflow-scheduler || true
           docker compose logs airflow-webserver || true
 
