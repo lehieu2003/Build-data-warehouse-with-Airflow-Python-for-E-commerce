@@ -22,13 +22,16 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      - name: Trigger Render deploy hook
+      - name: Trigger Render sync or deploy hook
         env:
           RENDER_DEPLOY_HOOK_URL: ${{ secrets.RENDER_DEPLOY_HOOK_URL }}
+          RENDER_SYNC_HOOK_URL: ${{ secrets.RENDER_SYNC_HOOK_URL }}
         run: |
-          if [ -z "${RENDER_DEPLOY_HOOK_URL:-}" ]; then
-            echo "Missing repository secret: RENDER_DEPLOY_HOOK_URL" >&2
+          HOOK_URL="${RENDER_SYNC_HOOK_URL:-${RENDER_DEPLOY_HOOK_URL:-}}"
+
+          if [ -z "${HOOK_URL:-}" ]; then
+            echo "Missing repository secret: RENDER_SYNC_HOOK_URL or RENDER_DEPLOY_HOOK_URL" >&2
             exit 1
           fi
 
-          curl -fsS -X POST "$RENDER_DEPLOY_HOOK_URL"
+          curl -fsS -X POST "$HOOK_URL"

@@ -20,7 +20,7 @@ No du cho muc tieu hoc:
 - push code
 - CI chay
 - CI xanh
-- GitHub Actions goi Render deploy hook
+- GitHub Actions goi Render hook
 - Render build va cap nhat service
 
 ## 2. File da duoc them
@@ -38,7 +38,7 @@ Luong se la:
 2. workflow `Airflow CI` chay
 3. neu CI pass
 4. workflow `Render CD` moi chay
-5. workflow goi `RENDER_DEPLOY_HOOK_URL`
+5. workflow goi `RENDER_SYNC_HOOK_URL` hoac `RENDER_DEPLOY_HOOK_URL`
 6. Render tu build va deploy service moi
 
 ## 4. Cach tao service tren Render
@@ -56,19 +56,32 @@ Luong se la:
 Luu y:
 
 - trong `render.yaml`, service dang de `autoDeployTrigger: off`
-- ly do la deploy se do GitHub Actions chu dong trigger qua deploy hook
+- ly do la deploy se do GitHub Actions chu dong trigger qua hook
 - tranh bi deploy 2 lan
 
-## 5. Lay deploy hook URL
+## 5. Lay hook URL
 
-Sau khi service duoc tao tren Render:
+Neu ban tao bang `Blueprint`, thuong ban se thay `Sync Hook`.
+
+Day la cach phu hop nhat voi setup hien tai:
+
+1. Mo `Blueprint Settings`
+2. Tim `Sync Hook`
+3. Copy URL nay
+
+Neu sau nay ban muon trigger rieng tung service:
 
 1. Mo service `airflow-demo`
 2. Vao `Settings`
 3. Tim `Deploy Hook`
 4. Copy URL nay
 
-Theo Render docs, moi service co mot deploy hook URL rieng va co the trigger bang `GET` hoac `POST`.
+Workflow da duoc viet de dung duoc ca:
+
+- `RENDER_SYNC_HOOK_URL`
+- `RENDER_DEPLOY_HOOK_URL`
+
+Theo Render docs, cac hook nay co the trigger bang `GET` hoac `POST`.
 
 Nguon:
 
@@ -85,8 +98,12 @@ Trong repo GitHub:
 
 Tao secret:
 
-- Name: `RENDER_DEPLOY_HOOK_URL`
-- Value: URL ban vua copy tu Render
+- Cach khuyen dung voi Blueprint:
+  - Name: `RENDER_SYNC_HOOK_URL`
+  - Value: URL ban vua copy tu Render
+- Cach thay the:
+  - Name: `RENDER_DEPLOY_HOOK_URL`
+  - Value: URL Deploy Hook cua service
 
 ## 7. Push code de chay CD
 
@@ -136,9 +153,9 @@ Kiem tra theo thu tu:
 
 1. `Airflow CI` co pass khong
 2. ban co push vao `main` khong
-3. secret `RENDER_DEPLOY_HOOK_URL` da tao chua
+3. secret `RENDER_SYNC_HOOK_URL` hoac `RENDER_DEPLOY_HOOK_URL` da tao chua
 4. service Render da ton tai chua
-5. deploy hook URL co dung service khong
+5. hook URL co dung Blueprint/service khong
 
 ## 11. Dieu quan trong
 
