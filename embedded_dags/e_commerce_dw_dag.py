@@ -151,10 +151,10 @@ def publish_mart_sales_daily():
         """
         INSERT INTO mart.mart_sales_daily (order_date, order_count, total_revenue, average_order_value)
         SELECT
-            f.order_date_key AS order_date,
+            f.order_date_key::date AS order_date,
             COUNT(DISTINCT f.order_id) AS order_count,
-            ROUND(SUM(f.total_amount)::numeric, 2) AS total_revenue,
-            ROUND((SUM(f.total_amount) / NULLIF(COUNT(DISTINCT f.order_id), 0))::numeric, 2) AS average_order_value
+            ROUND(SUM(f.total_amount::numeric)::numeric, 2) AS total_revenue,
+            ROUND((SUM(f.total_amount::numeric) / NULLIF(COUNT(DISTINCT f.order_id), 0))::numeric, 2) AS average_order_value
         FROM warehouse.fact_orders f
         GROUP BY f.order_date_key
         ORDER BY f.order_date_key;
@@ -189,13 +189,13 @@ def publish_mart_product_performance():
             avg_item_price
         )
         SELECT
-            f.product_key AS product_id,
+            f.product_key::varchar(64) AS product_id,
             p.product_category_name,
             p.product_category_name_english,
             COUNT(DISTINCT f.order_id) AS order_count,
             COUNT(*) AS total_quantity,
-            ROUND(SUM(f.total_amount)::numeric, 2) AS total_revenue,
-            ROUND(AVG(f.price)::numeric, 2) AS avg_item_price
+            ROUND(SUM(f.total_amount::numeric)::numeric, 2) AS total_revenue,
+            ROUND(AVG(f.price::numeric)::numeric, 2) AS avg_item_price
         FROM warehouse.fact_orders f
         JOIN warehouse.dim_products p ON f.product_key = p.product_id
         GROUP BY f.product_key, p.product_category_name, p.product_category_name_english
@@ -224,7 +224,7 @@ def publish_mart_city_revenue():
             g.geolocation_city,
             g.geolocation_state,
             COUNT(DISTINCT f.order_id) AS order_count,
-            ROUND(SUM(f.total_amount)::numeric, 2) AS total_revenue
+            ROUND(SUM(f.total_amount::numeric)::numeric, 2) AS total_revenue
         FROM warehouse.fact_orders f
         JOIN warehouse.dim_geolocation g
             ON f.geolocation_key::text = g.geolocation_zip_code_prefix::text
