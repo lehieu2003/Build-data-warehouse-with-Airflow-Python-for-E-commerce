@@ -76,8 +76,8 @@ jobs:
           docker compose run --rm airflow-cli connections add mysql --conn-type mysql --conn-host mysql --conn-login admin --conn-password admin --conn-schema olist --conn-port 3306
           docker compose run --rm airflow-cli connections add postgres --conn-type postgres --conn-host de_psql --conn-login admin --conn-password admin --conn-schema postgres --conn-port 5432
 
-      - name: Unpause DAG
-        run: docker compose run --rm airflow-cli dags unpause e_commerce_dw_etl
+      - name: Keep DAG paused to avoid scheduled runs
+        run: docker compose run --rm airflow-cli dags pause e_commerce_dw_etl || true
 
       - name: Trigger DAG run
         run: |
@@ -100,7 +100,7 @@ jobs:
               exit 0
             fi
             if [ "${STATE}" = "failed" ]; then
-              docker compose run --rm airflow-cli tasks states-for-dag-run e_commerce_dw_etl "${DAG_RUN_ID}" || true
+              curl -fsS -u airflow:airflow "http://localhost:8080/api/v1/dags/e_commerce_dw_etl/dagRuns/${DAG_RUN_ID}/taskInstances" || true
               docker compose logs airflow-scheduler
               docker compose logs airflow-webserver
               exit 1
@@ -113,11 +113,22 @@ jobs:
       - name: Dump task logs when DAG fails
         if: failure()
         run: |
-          docker compose run --rm airflow-cli tasks states-for-dag-run e_commerce_dw_etl "${DAG_RUN_ID}" || true
-          for TASK_ID in extract.extract_and_load_to_staging transform.transform_dim_customers transform.transform_dim_products transform.transform_dim_sellers transform.transform_dim_geolocation transform.transform_dim_dates transform.transform_dim_payments load.transform_fact_orders publish_marts.create_mart_schema publish_marts.publish_mart_sales_daily publish_marts.publish_mart_product_performance publish_marts.publish_mart_city_revenue; do
-            echo "===== ${TASK_ID} ====="
-            docker compose run --rm airflow-cli tasks logs e_commerce_dw_etl "${TASK_ID}" "${DAG_RUN_ID}" || true
-          done
+          curl -fsS -u airflow:airflow "http://localhost:8080/api/v1/dags/e_commerce_dw_etl/dagRuns/${DAG_RUN_ID}/taskInstances" > /tmp/task_instances.json || true
+          cat /tmp/task_instances.json || true
+          python - <<'PY'
+import json
+from pathlib import Path
+
+path = Path("/tmp/task_instances.json")
+if not path.exists():
+    raise SystemExit(0)
+
+data = json.loads(path.read_text(encoding="utf-8"))
+for item in data.get("task_instances", []):
+    print(f"{item.get('task_id')} -> {item.get('state')}")
+PY
+          docker compose logs airflow-scheduler || true
+          docker compose logs airflow-webserver || true
 
       - name: Verify mart tables contain data
         run: |
