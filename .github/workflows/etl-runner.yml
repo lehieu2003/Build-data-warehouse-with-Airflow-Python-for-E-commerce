@@ -51,16 +51,7 @@ jobs:
           for i in {1..30}; do
             if curl -fsS http://localhost:8080/health > /tmp/airflow-health.json; then
               cat /tmp/airflow-health.json
-              python - <<'PY'
-import json
-with open("/tmp/airflow-health.json", "r", encoding="utf-8") as f:
-    data = json.load(f)
-web_ok = data.get("metadatabase", {}).get("status") == "healthy"
-scheduler_ok = data.get("scheduler", {}).get("status") == "healthy"
-if web_ok and scheduler_ok:
-    raise SystemExit(0)
-raise SystemExit(1)
-PY
+              python -c "import json; data=json.load(open('/tmp/airflow-health.json', 'r', encoding='utf-8')); raise SystemExit(0 if data.get('metadatabase', {}).get('status') == 'healthy' and data.get('scheduler', {}).get('status') == 'healthy' else 1)"
               if [ $? -eq 0 ]; then
                 exit 0
               fi
