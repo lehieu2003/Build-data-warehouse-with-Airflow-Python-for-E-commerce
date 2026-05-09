@@ -28,4 +28,4 @@ USER airflow
 
 RUN airflow db init
 
-CMD ["/opt/airflow/scripts/render-start.sh"]
+CMD ["bash", "-c", "/opt/airflow/scripts/render-start.sh"]
