@@ -1,0 +1,20 @@
+FROM apache/airflow:2.9.2-python3.10
+
+COPY requirements.txt /requirements.txt
+
+RUN pip install --upgrade pip \
+    && pip install -r /requirements.txt
+
+COPY embedded_dags /opt/airflow/dags
+COPY plugins /opt/airflow/plugins
+COPY scripts/render-start.sh /opt/airflow/scripts/render-start.sh
+
+RUN chmod +x /opt/airflow/scripts/render-start.sh \
+    && mkdir -p /opt/airflow/render-home \
+    && chown -R airflow:0 /opt/airflow/dags /opt/airflow/plugins /opt/airflow/scripts /opt/airflow/render-home
+
+ENV AIRFLOW_HOME=/opt/airflow/render-home
+ENV AIRFLOW__CORE__DAGS_FOLDER=/opt/airflow/dags
+ENV AIRFLOW__CORE__PLUGINS_FOLDER=/opt/airflow/plugins
+
+CMD ["/opt/airflow/scripts/render-start.sh"]

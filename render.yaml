@@ -1,0 +1,23 @@
+services:
+  - type: web
+    name: airflow-demo
+    runtime: docker
+    plan: free
+    region: singapore
+    dockerfilePath: ./Dockerfile.render
+    dockerContext: .
+    autoDeployTrigger: off
+    healthCheckPath: /health
+    envVars:
+      - key: AIRFLOW__WEBSERVER__WEB_SERVER_HOST
+        value: 0.0.0.0
+      - key: AIRFLOW__WEBSERVER__WEB_SERVER_PORT
+        value: "10000"
+      - key: AIRFLOW__CORE__LOAD_EXAMPLES
+        value: "False"
+      - key: AIRFLOW__CORE__EXECUTOR
+        value: SequentialExecutor
+      - key: AIRFLOW__DATABASE__SQL_ALCHEMY_CONN
+        value: sqlite:////opt/airflow/render-home/airflow.db
+      - key: AIRFLOW__CORE__FERNET_KEY
+        generateValue: true
